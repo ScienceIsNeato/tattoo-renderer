@@ -23,9 +23,36 @@ def generate_random_color():
   """Generates a random BGR color tuple."""
   return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
-def connect_dots(image, start, end, style='line', color=(0, 0, 0)):
+def connect_dots(image, start, end, style='line', color=(0, 0, 255)):
     if style == 'line':
         cv2.line(image, start, end, color, 2)
+    elif style == 'gravitational':
+        # Determine which point is the vertex (higher y-value because y increases downwards)
+        vertex = start if start[1] < end[1] else end
+        other = end if start is vertex else start
+
+        # Calculate horizontal distance and total x movement
+        horizontal_distance = abs(vertex[0] - other[0])
+
+        # Establish parameters for the parabola
+        a = (other[1] - vertex[1]) / (horizontal_distance**2)  # Parabola coefficient a
+        h = vertex[0]  # x-coordinate of the vertex
+        k = vertex[1]  # y-coordinate of the vertex
+
+        # Generate x values from vertex to other point
+        x_values = np.linspace(vertex[0], other[0], num=100)  # Number of points can be increased for smoother curve
+
+        # Compute y-values for parabola: y = a(x - h)^2 + k
+        y_values = a * (x_values - h)**2 + k
+
+        # Prepare points for drawing
+        points = np.stack((x_values, y_values), axis=1).astype(np.int32)
+        points = points.reshape((-1, 1, 2))
+        cv2.polylines(image, [points], False, color, 2, cv2.LINE_AA)  # Use LINE_AA for anti-aliased curves
+
+        # Ensure the other point falls on the parabola
+        assert np.isclose(other[1], a * (other[0] - h)**2 + k, atol=1), "The other point does not lie on the parabola as expected."
+
 
 def random_connections(image, line1, line2, num_connections, style='line', multicolor=False):
   if multicolor:
@@ -64,8 +91,9 @@ right_line.draw(image)
 
 # Add random connections
 num_connections = 150  # Specify the number of connections
-multicolor = False
-random_connections(image, left_line, right_line, num_connections, 'line', multicolor=multicolor)
+multicolor = True
+style = 'gravitational'
+random_connections(image, left_line, right_line, num_connections, style=style, multicolor=multicolor)
 
 # Save the image
 cv2.imwrite('/mnt/data/vertical_lines_4k_portrait.png', image)
