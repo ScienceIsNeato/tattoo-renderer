@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 920" width="1600" height="920" role="img">
+  <rect width="100%" height="100%" fill="#f7f7f3"/>
+
+  <title>SLITS</title>
+  <g stroke-linecap="round" stroke-linejoin="round">
+  <rect x="448.00" y="86.00" width="96.00" height="353.50" fill="#111" rx="5"/>
+  <rect x="448.00" y="480.50" width="96.00" height="353.50" fill="#111" rx="5"/>
+  <rect x="783.00" y="86.00" width="96.00" height="240.00" fill="#111" rx="5"/>
+  <rect x="783.00" y="354.00" width="96.00" height="212.00" fill="#111" rx="5"/>
+  <rect x="783.00" y="594.00" width="96.00" height="240.00" fill="#111" rx="5"/>
+  </g>
+</svg>
