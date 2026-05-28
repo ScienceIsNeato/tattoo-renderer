@@ -2360,19 +2360,19 @@
   <path d="M 831.00 240.48 A 339.52 339.52 0 0 1 831.00 919.52" fill="none" stroke="#141414" stroke-width="2.28" opacity="0.214"/>
   <path d="M 831.00 203.04 A 376.96 376.96 0 0 1 831.00 956.96" fill="none" stroke="#141414" stroke-width="2.24" opacity="0.202"/>
   <path d="M 831.00 165.60 A 414.40 414.40 0 0 1 831.00 994.40" fill="none" stroke="#141414" stroke-width="2.20" opacity="0.190"/>
-  <path d="M 879.00 340.00 C 705 292.38, 870 207.72, 1264.00 207.72" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 340.00 C 705 324.43, 870 296.76, 1264.00 296.76" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 340.00 C 705 356.49, 870 385.80, 1264.00 385.80" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 340.00 C 705 383.20, 870 460.00, 1264.00 460.00" fill="none" stroke="#111" stroke-width="1.1" opacity="0.13"/>
-  <path d="M 879.00 340.00 C 705 409.91, 870 534.20, 1264.00 534.20" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 340.00 C 705 441.97, 870 623.24, 1264.00 623.24" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 340.00 C 705 474.02, 870 712.28, 1264.00 712.28" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 580.00 C 705 445.98, 870 207.72, 1264.00 207.72" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 580.00 C 705 478.03, 870 296.76, 1264.00 296.76" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 580.00 C 705 510.09, 870 385.80, 1264.00 385.80" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 580.00 C 705 536.80, 870 460.00, 1264.00 460.00" fill="none" stroke="#111" stroke-width="1.1" opacity="0.13"/>
-  <path d="M 879.00 580.00 C 705 563.51, 870 534.20, 1264.00 534.20" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 580.00 C 705 595.57, 870 623.24, 1264.00 623.24" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
-  <path d="M 879.00 580.00 C 705 627.62, 870 712.28, 1264.00 712.28" fill="none" stroke="#111" stroke-width="1.1" opacity="0.08"/>
+  <path d="M 879.00 340.00 C 705 292.38, 870 207.72, 1264.00 207.72" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 340.00 C 705 324.43, 870 296.76, 1264.00 296.76" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 340.00 C 705 356.49, 870 385.80, 1264.00 385.80" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 340.00 C 705 383.20, 870 460.00, 1264.00 460.00" fill="none" stroke="#111" stroke-width="1.65" opacity="0.28"/>
+  <path d="M 879.00 340.00 C 705 409.91, 870 534.20, 1264.00 534.20" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 340.00 C 705 441.97, 870 623.24, 1264.00 623.24" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 340.00 C 705 474.02, 870 712.28, 1264.00 712.28" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 580.00 C 705 445.98, 870 207.72, 1264.00 207.72" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 580.00 C 705 478.03, 870 296.76, 1264.00 296.76" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 580.00 C 705 510.09, 870 385.80, 1264.00 385.80" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 580.00 C 705 536.80, 870 460.00, 1264.00 460.00" fill="none" stroke="#111" stroke-width="1.65" opacity="0.28"/>
+  <path d="M 879.00 580.00 C 705 563.51, 870 534.20, 1264.00 534.20" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 580.00 C 705 595.57, 870 623.24, 1264.00 623.24" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
+  <path d="M 879.00 580.00 C 705 627.62, 870 712.28, 1264.00 712.28" fill="none" stroke="#111" stroke-width="1.65" opacity="0.18"/>
   </g>
 </svg>

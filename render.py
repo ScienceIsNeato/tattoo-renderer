@@ -15,6 +15,9 @@ COMBINED_VIEW_MIN_Y = 0
 COMBINED_VIEW_WIDTH = 2460
 COMBINED_VIEW_HEIGHT = 1080
 VISIBLE_BAND_COUNT = 15
+SHOULDER_ATOM_CX = -195.0
+SHOULDER_ATOM_CY = 624.0
+SHOULDER_ATOM_SCALE = 1.88
 
 
 @dataclass(frozen=True)
@@ -285,17 +288,98 @@ def shoulder_atom_preview_layer(cx: float, cy: float, scale: float = 1.0, indent
 
 
 def shoulder_atom_emergence_layer(indent: str = "  ") -> list[str]:
-    return shoulder_atom_preview_layer(-195, 624, 1.88, indent)
+    return shoulder_atom_preview_layer(SHOULDER_ATOM_CX, SHOULDER_ATOM_CY, SHOULDER_ATOM_SCALE, indent)
 
 
-def experiment_layer(layout: ExperimentLayout = LAYOUT, indent: str = "  ") -> list[str]:
+def combined_cloud_start(experiment_x: float, experiment_y: float, experiment_scale: float, layout: ExperimentLayout = LAYOUT) -> tuple[float, float]:
+    _, projection_height = screen_bounds()
+    band_height = projection_height / VISIBLE_BAND_COUNT
+    local_x = layout.source_x - band_height * 10.6
+    local_y = probability_cloud_centerline(local_x, layout.source_x - band_height * 0.72, layout.source_y, 2)[0][1]
+    return experiment_x + local_x * experiment_scale, experiment_y + local_y * experiment_scale
+
+
+def combined_experiment_point(local_x: float, local_y: float, experiment_x: float, experiment_y: float, experiment_scale: float) -> tuple[float, float]:
+    return experiment_x + local_x * experiment_scale, experiment_y + local_y * experiment_scale
+
+
+def atom_particle_trail_layer(experiment_x: float, experiment_y: float, experiment_scale: float, indent: str = "  ") -> list[str]:
+    beam_x, beam_y = combined_experiment_point(LAYOUT.source_x - 28, LAYOUT.source_y, experiment_x, experiment_y, experiment_scale)
+    orbit_radius = 118.0 * SHOULDER_ATOM_SCALE
+    stream_anchor_x = SHOULDER_ATOM_CX + orbit_radius * 1.05
+    stream_anchor_y = SHOULDER_ATOM_CY - orbit_radius * 0.18
+    envelope_start_x = SHOULDER_ATOM_CX + orbit_radius * 0.55
+    envelope_end_x = beam_x
+
+    def envelope_bounds(fraction: float) -> tuple[float, float, float]:
+        eased = fraction * fraction * (3.0 - 2.0 * fraction)
+        x = envelope_start_x + (envelope_end_x - envelope_start_x) * eased
+        upper_start = SHOULDER_ATOM_CY - orbit_radius * 0.58
+        lower_start = SHOULDER_ATOM_CY + orbit_radius * 0.54
+        upper = upper_start + (beam_y - upper_start) * eased
+        lower = lower_start + (beam_y - lower_start) * eased
+        upper += math.sin(fraction * math.tau * 1.9 + 0.26) * 62.0 * (1.0 - fraction) ** 0.82
+        upper -= math.sin(fraction * math.pi) * 34.0 * (1.0 - fraction) ** 0.72
+        lower += math.sin(fraction * math.tau * 1.1 + 1.06) * 58.0 * (1.0 - fraction) ** 0.88
+        lower += math.sin(fraction * math.pi) * 78.0 * (1.0 - fraction) ** 1.08
+        taper = 1.0 - fraction ** 2.7
+        minimum_gap = 9.0 + 92.0 * taper
+        if lower - upper < minimum_gap:
+            midpoint = (upper + lower) / 2
+            upper = midpoint - minimum_gap / 2
+            lower = midpoint + minimum_gap / 2
+        return x, upper, lower
+
+    lines: list[str] = []
+    for index in range(3600):
+        fraction = index / 3599
+        angle = -1.08 + fraction * 2.08
+        shell = orbit_radius * (0.62 + 0.34 * deterministic_noise(index, 101, 1601))
+        tangent_jitter = (deterministic_noise(index, 103, 1613) - 0.5) * 56.0
+        x = SHOULDER_ATOM_CX + math.cos(angle) * shell + math.cos(angle + math.pi / 2) * tangent_jitter
+        y = SHOULDER_ATOM_CY + math.sin(angle) * shell + math.sin(angle + math.pi / 2) * tangent_jitter
+        side_weight = 0.30 + 0.70 * math.sin(math.pi * fraction)
+        radius = 0.58 + 1.58 * side_weight * deterministic_noise(index, 107, 1621)
+        opacity = 0.18 + 0.58 * side_weight
+        lines.append(f'{indent}<circle cx="{x:.2f}" cy="{y:.2f}" r="{radius:.2f}" fill="#050505" opacity="{opacity:.3f}"/>')
+    upper_points: list[tuple[float, float]] = []
+    lower_points: list[tuple[float, float]] = []
+    for index in range(96):
+        fraction = index / 95
+        x, upper, lower = envelope_bounds(fraction)
+        upper_points.append((x, upper))
+        lower_points.append((x, lower))
+    lines.append(f'{indent}<path d="{path_from_points(upper_points)}" fill="none" stroke="#111" stroke-width="1.0" opacity="0.10"/>')
+    lines.append(f'{indent}<path d="{path_from_points(lower_points)}" fill="none" stroke="#111" stroke-width="1.0" opacity="0.10"/>')
+    for index in range(18000):
+        fraction = deterministic_noise(index, 109, 1637)
+        fraction = fraction ** 0.78
+        x, upper, lower = envelope_bounds(fraction)
+        span = lower - upper
+        vertical_fraction = (deterministic_noise(index, 113, 1657) + deterministic_noise(index, 127, 1663)) / 2
+        edge_bias = 1.0 - abs(vertical_fraction * 2.0 - 1.0)
+        x += (deterministic_noise(index, 131, 1667) - 0.5) * 30.0 * (1.0 - fraction) ** 0.76
+        y = upper + span * vertical_fraction
+        density = 0.30 + 0.70 * edge_bias
+        radius = 0.48 + 1.62 * density * (0.48 + 0.52 * deterministic_noise(index, 137, 1693))
+        opacity = 0.20 + 0.64 * density * (0.50 + 0.50 * fraction)
+        lines.append(f'{indent}<circle cx="{x:.2f}" cy="{y:.2f}" r="{radius:.2f}" fill="#050505" opacity="{opacity:.3f}"/>')
+    for index in range(20):
+        fraction = index / 19
+        x = beam_x + (LAYOUT.source_x - 2 - (LAYOUT.source_x - 28)) * experiment_scale * fraction
+        dot_radius = 2.8 - fraction * 1.1
+        lines.append(f'{indent}<circle cx="{x:.2f}" cy="{beam_y:.2f}" r="{dot_radius:.2f}" fill="#111" opacity="{0.24 + fraction * 0.50:.3f}"/>')
+    return lines
+
+
+def experiment_layer(layout: ExperimentLayout = LAYOUT, indent: str = "  ", include_incoming_cloud: bool = True) -> list[str]:
     slit_centers = [MODEL.center_y - MODEL.slit_separation / 2, MODEL.center_y + MODEL.slit_separation / 2]
     top, height = screen_bounds()
     emitter_x = layout.source_x
     emitter_y = layout.source_y
     nozzle_x = emitter_x + 24
     slit_entrance_x = layout.source_wall_x - layout.wall_width / 2
-    lines = incoming_probability_cloud_layer(layout, indent)
+    lines = incoming_probability_cloud_layer(layout, indent) if include_incoming_cloud else []
     lines.extend([
         f'{indent}<circle cx="{emitter_x:.2f}" cy="{emitter_y:.2f}" r="22" fill="none" stroke="#111" stroke-width="3.8" opacity="0.92"/>',
         f'{indent}<circle cx="{emitter_x:.2f}" cy="{emitter_y:.2f}" r="13" fill="none" stroke="#111" stroke-width="2.4" opacity="0.72"/>',
@@ -313,10 +397,10 @@ def experiment_layer(layout: ExperimentLayout = LAYOUT, indent: str = "  ") -> l
         for target_index, fraction in enumerate([0.16, 0.28, 0.4, 0.5, 0.6, 0.72, 0.84]):
             target_y = top + height * fraction
             control_y = slit_y * 0.64 + target_y * 0.36
-            opacity = 0.08 if target_index != 3 else 0.13
+            opacity = 0.18 if target_index != 3 else 0.28
             lines.append(
                 f'{indent}<path d="M {layout.double_wall_x + layout.wall_width / 2:.2f} {slit_y:.2f} C 705 {control_y:.2f}, 870 {target_y:.2f}, {layout.projection_x - layout.projection_width:.2f} {target_y:.2f}" '
-                f'fill="none" stroke="#111" stroke-width="1.1" opacity="{opacity:.2f}"/>'
+                f'fill="none" stroke="#111" stroke-width="1.65" opacity="{opacity:.2f}"/>'
             )
     return lines
 
@@ -423,8 +507,9 @@ def render_combined_svg() -> str:
             '  <g stroke-linecap="round" stroke-linejoin="round">',
         ]
     )
-    experiment_content = experiment_layer() + slit_layer()
+    experiment_content = experiment_layer(include_incoming_cloud=False) + slit_layer()
     lines.extend(shoulder_atom_emergence_layer())
+    lines.extend(atom_particle_trail_layer(570, 190, experiment_scale))
     lines.extend(wrap_group(experiment_content, 570, 190, experiment_scale, "incoming electron cloud plus EXPERIMENT and SLITS"))
     lines.extend(wrap_group(wall_projection_layer(center_x=0.0), 1570, 100, projection_scale, "right side: WALL_PROJECTION"))
     lines.extend(['  </g>', '</svg>'])
