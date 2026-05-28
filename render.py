@@ -8,8 +8,12 @@ from pathlib import Path
 
 CANVAS_WIDTH = 1600
 CANVAS_HEIGHT = 920
-COMBINED_WIDTH = 1900
-COMBINED_HEIGHT = 920
+COMBINED_WIDTH = 2460
+COMBINED_HEIGHT = 1080
+COMBINED_VIEW_MIN_X = -560
+COMBINED_VIEW_MIN_Y = 0
+COMBINED_VIEW_WIDTH = 2460
+COMBINED_VIEW_HEIGHT = 1080
 VISIBLE_BAND_COUNT = 15
 
 
@@ -104,6 +108,14 @@ def svg_header(width: int, height: int) -> str:
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
         f'width="{width}" height="{height}" role="img">\n'
         '  <rect width="100%" height="100%" fill="#f7f7f3"/>\n'
+    )
+
+
+def svg_header_viewbox(width: int, height: int, min_x: int, min_y: int, view_width: int, view_height: int) -> str:
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{min_x} {min_y} {view_width} {view_height}" '
+        f'width="{width}" height="{height}" role="img">\n'
+        f'  <rect x="{min_x}" y="{min_y}" width="{view_width}" height="{view_height}" fill="#f7f7f3"/>\n'
     )
 
 
@@ -238,6 +250,44 @@ def incoming_probability_cloud_layer(layout: ExperimentLayout = LAYOUT, indent: 
     return lines
 
 
+def shoulder_atom_preview_layer(cx: float, cy: float, scale: float = 1.0, indent: str = "  ") -> list[str]:
+    stroke_width = 6.6 * scale
+    orbit_specs = [
+        (-18, 118, 31, "#252525", 0.74),
+        (23, 118, 30, "#2f6b52", 0.74),
+        (66, 112, 27, "#252525", 0.66),
+        (-58, 96, 24, "#252525", 0.58),
+        (5, 90, 23, "#6aa679", 0.54),
+    ]
+    lines = [f'{indent}<g opacity="0.92">']
+    for rotation, rx, ry, color, opacity in orbit_specs:
+        lines.append(
+            f'{indent}  <ellipse cx="{cx:.2f}" cy="{cy:.2f}" rx="{rx * scale:.2f}" ry="{ry * scale:.2f}" '
+            f'transform="rotate({rotation:.2f} {cx:.2f} {cy:.2f})" fill="none" stroke="{color}" '
+            f'stroke-width="{stroke_width:.2f}" opacity="{opacity:.2f}"/>'
+        )
+    nucleus_colors = ["#1f1f1f", "#808b83", "#2c2c2c", "#8f9b93", "#242424", "#a0aaa2"]
+    nucleus_points = [(-11, -4), (1, -12), (14, -6), (10, 9), (-4, 12), (-17, 7)]
+    lines.extend(
+        [
+            f'{indent}  <circle cx="{cx:.2f}" cy="{cy:.2f}" r="{33 * scale:.2f}" fill="none" stroke="#e57d55" stroke-width="{5.4 * scale:.2f}" opacity="0.66"/>',
+            f'{indent}  <circle cx="{cx - 2 * scale:.2f}" cy="{cy + 2 * scale:.2f}" r="{24 * scale:.2f}" fill="none" stroke="#72adc0" stroke-width="{4.2 * scale:.2f}" opacity="0.44"/>',
+        ]
+    )
+    for (dx, dy), color in zip(nucleus_points, nucleus_colors):
+        lines.append(f'{indent}  <circle cx="{cx + dx * scale:.2f}" cy="{cy + dy * scale:.2f}" r="{8.4 * scale:.2f}" fill="none" stroke="{color}" stroke-width="{3.0 * scale:.2f}" opacity="0.66"/>')
+    for angle in [0.22, 2.32, 3.84, 5.28]:
+        electron_x = cx + math.cos(angle) * 92 * scale
+        electron_y = cy + math.sin(angle) * 34 * scale
+        lines.append(f'{indent}  <circle cx="{electron_x:.2f}" cy="{electron_y:.2f}" r="{6.2 * scale:.2f}" fill="#1f1f1f" opacity="0.58"/>')
+    lines.append(f'{indent}</g>')
+    return lines
+
+
+def shoulder_atom_emergence_layer(indent: str = "  ") -> list[str]:
+    return shoulder_atom_preview_layer(-195, 624, 1.88, indent)
+
+
 def experiment_layer(layout: ExperimentLayout = LAYOUT, indent: str = "  ") -> list[str]:
     slit_centers = [MODEL.center_y - MODEL.slit_separation / 2, MODEL.center_y + MODEL.slit_separation / 2]
     top, height = screen_bounds()
@@ -363,7 +413,10 @@ def render_experiment_svg() -> str:
 def render_combined_svg() -> str:
     experiment_scale = 0.56
     projection_scale = 0.78
-    lines = [svg_header(COMBINED_WIDTH, COMBINED_HEIGHT), '  <title>COMBINED</title>']
+    lines = [
+        svg_header_viewbox(COMBINED_WIDTH, COMBINED_HEIGHT, COMBINED_VIEW_MIN_X, COMBINED_VIEW_MIN_Y, COMBINED_VIEW_WIDTH, COMBINED_VIEW_HEIGHT),
+        '  <title>COMBINED</title>',
+    ]
     lines.extend(
         [
             '  <line x1="1245.00" y1="54" x2="1245.00" y2="866" stroke="#111" stroke-width="2" stroke-dasharray="18 20" opacity="0.42"/>',
@@ -371,7 +424,8 @@ def render_combined_svg() -> str:
         ]
     )
     experiment_content = experiment_layer() + slit_layer()
-    lines.extend(wrap_group(experiment_content, 340, 190, experiment_scale, "incoming electron cloud plus EXPERIMENT and SLITS"))
+    lines.extend(shoulder_atom_emergence_layer())
+    lines.extend(wrap_group(experiment_content, 570, 190, experiment_scale, "incoming electron cloud plus EXPERIMENT and SLITS"))
     lines.extend(wrap_group(wall_projection_layer(center_x=0.0), 1570, 100, projection_scale, "right side: WALL_PROJECTION"))
     lines.extend(['  </g>', '</svg>'])
     return "\n".join(lines)
