@@ -8,8 +8,9 @@ from pathlib import Path
 
 CANVAS_WIDTH = 1600
 CANVAS_HEIGHT = 920
-COMBINED_WIDTH = 1600
+COMBINED_WIDTH = 1900
 COMBINED_HEIGHT = 920
+VISIBLE_BAND_COUNT = 15
 
 
 @dataclass(frozen=True)
@@ -173,6 +174,70 @@ def phase_fronts(cx: float, cy: float, start_radius: float, stop_radius: float, 
     return paths
 
 
+def probability_cloud_centerline(start_x: float, end_x: float, center_y: float, samples: int) -> list[tuple[float, float]]:
+    points: list[tuple[float, float]] = []
+    span = end_x - start_x
+    for index in range(samples):
+        fraction = index / (samples - 1)
+        collapse = (1.0 - fraction) ** 0.58
+        drift = math.sin(fraction * math.tau * 2.12 - 0.72) * 86.0 * collapse
+        counter_drift = math.sin(fraction * math.tau * 4.4 + 1.1) * 16.0 * (1.0 - fraction)
+        x = start_x + span * fraction
+        y = center_y + drift + counter_drift
+        points.append((x, y))
+    return points
+
+
+def path_from_points(points: list[tuple[float, float]]) -> str:
+    return "M " + " L ".join(f"{x:.2f},{y:.2f}" for x, y in points)
+
+
+def incoming_probability_cloud_layer(layout: ExperimentLayout = LAYOUT, indent: str = "  ") -> list[str]:
+    _, projection_height = screen_bounds()
+    band_height = projection_height / VISIBLE_BAND_COUNT
+    start_x = layout.source_x - band_height * 10.6
+    end_x = layout.source_x - band_height * 0.72
+    centerline = probability_cloud_centerline(start_x, end_x, layout.source_y, 240)
+    lines = [
+        f'{indent}<path d="{path_from_points(centerline)}" fill="none" stroke="#111" stroke-width="1.2" opacity="0.16"/>'
+    ]
+    for index in range(2300):
+        fraction = index / 2299
+        jittered_fraction = clamp(fraction + (deterministic_noise(index, 83, 1201) - 0.5) * 0.018, 0.0, 1.0)
+        center_index = min(len(centerline) - 2, max(1, int(jittered_fraction * (len(centerline) - 1))))
+        previous_x, previous_y = centerline[center_index - 1]
+        center_x, center_y = centerline[center_index]
+        next_x, next_y = centerline[center_index + 1]
+        tangent_x = next_x - previous_x
+        tangent_y = next_y - previous_y
+        tangent_length = math.hypot(tangent_x, tangent_y) or 1.0
+        normal_x = -tangent_y / tangent_length
+        normal_y = tangent_x / tangent_length
+        cloud_width = band_height * (1.55 * (1.0 - jittered_fraction) ** 1.34 + 0.075)
+        lateral_noise = deterministic_noise(index, 41, 1237) + deterministic_noise(index, 47, 1283) - 1.0
+        lateral = lateral_noise * cloud_width
+        longitudinal = (deterministic_noise(index, 59, 1301) - 0.5) * band_height * 0.42 * (1.0 - jittered_fraction)
+        x = center_x + normal_x * lateral + tangent_x / tangent_length * longitudinal
+        y = center_y + normal_y * lateral + tangent_y / tangent_length * longitudinal
+        density = 1.0 - abs(lateral) / max(cloud_width, 1.0)
+        radius = 0.34 + 1.08 * density * (0.45 + deterministic_noise(index, 61, 1327) * 0.55)
+        opacity = 0.12 + 0.62 * density * (0.45 + 0.55 * jittered_fraction)
+        lines.append(f'{indent}<circle cx="{x:.2f}" cy="{y:.2f}" r="{radius:.2f}" fill="#050505" opacity="{opacity:.3f}"/>')
+    beam_start_x = end_x + band_height * 0.12
+    beam_end_x = layout.source_x - 28
+    lines.append(
+        f'{indent}<path d="M {beam_start_x:.2f} {layout.source_y:.2f} C {beam_start_x + 42:.2f} {layout.source_y + 2:.2f}, '
+        f'{beam_end_x - 54:.2f} {layout.source_y - 2:.2f}, {beam_end_x:.2f} {layout.source_y:.2f}" '
+        'fill="none" stroke="#111" stroke-width="2.6" opacity="0.46" stroke-dasharray="3 10"/>'
+    )
+    for index in range(18):
+        fraction = index / 17
+        x = beam_start_x + (beam_end_x - beam_start_x) * fraction
+        dot_radius = 2.9 - fraction * 1.25
+        lines.append(f'{indent}<circle cx="{x:.2f}" cy="{layout.source_y:.2f}" r="{dot_radius:.2f}" fill="#111" opacity="{0.18 + fraction * 0.56:.3f}"/>')
+    return lines
+
+
 def experiment_layer(layout: ExperimentLayout = LAYOUT, indent: str = "  ") -> list[str]:
     slit_centers = [MODEL.center_y - MODEL.slit_separation / 2, MODEL.center_y + MODEL.slit_separation / 2]
     top, height = screen_bounds()
@@ -180,7 +245,8 @@ def experiment_layer(layout: ExperimentLayout = LAYOUT, indent: str = "  ") -> l
     emitter_y = layout.source_y
     nozzle_x = emitter_x + 24
     slit_entrance_x = layout.source_wall_x - layout.wall_width / 2
-    lines = [
+    lines = incoming_probability_cloud_layer(layout, indent)
+    lines.extend([
         f'{indent}<circle cx="{emitter_x:.2f}" cy="{emitter_y:.2f}" r="22" fill="none" stroke="#111" stroke-width="3.8" opacity="0.92"/>',
         f'{indent}<circle cx="{emitter_x:.2f}" cy="{emitter_y:.2f}" r="13" fill="none" stroke="#111" stroke-width="2.4" opacity="0.72"/>',
         f'{indent}<circle cx="{emitter_x:.2f}" cy="{emitter_y:.2f}" r="5.8" fill="#111" opacity="0.90"/>',
@@ -189,7 +255,7 @@ def experiment_layer(layout: ExperimentLayout = LAYOUT, indent: str = "  ") -> l
         f'{indent}<circle cx="{nozzle_x + 22:.2f}" cy="{emitter_y:.2f}" r="2.7" fill="#111" opacity="0.70"/>',
         f'{indent}<circle cx="{nozzle_x + 44:.2f}" cy="{emitter_y:.2f}" r="2.2" fill="#111" opacity="0.62"/>',
         f'{indent}<circle cx="{nozzle_x + 66:.2f}" cy="{emitter_y:.2f}" r="1.9" fill="#111" opacity="0.56"/>',
-    ]
+    ])
     lines.extend(phase_fronts(layout.source_wall_x, MODEL.center_y, 40, 318, MODEL.wavelength * 2.56, 0.34, indent))
     for slit_y in slit_centers:
         lines.extend(phase_fronts(layout.double_wall_x, slit_y, 40, 438, MODEL.wavelength * 2.08, 0.31, indent))
@@ -295,18 +361,18 @@ def render_experiment_svg() -> str:
 
 
 def render_combined_svg() -> str:
-    right_scale = 0.53
-    left_scale = 0.78
+    experiment_scale = 0.56
+    projection_scale = 0.78
     lines = [svg_header(COMBINED_WIDTH, COMBINED_HEIGHT), '  <title>COMBINED</title>']
     lines.extend(
         [
-            f'  <line x1="{COMBINED_WIDTH / 2:.2f}" y1="54" x2="{COMBINED_WIDTH / 2:.2f}" y2="866" stroke="#111" stroke-width="2" stroke-dasharray="18 20" opacity="0.55"/>',
+            '  <line x1="1245.00" y1="54" x2="1245.00" y2="866" stroke="#111" stroke-width="2" stroke-dasharray="18 20" opacity="0.42"/>',
             '  <g stroke-linecap="round" stroke-linejoin="round">',
         ]
     )
-    lines.extend(wrap_group(wall_projection_layer(), -460, 100, left_scale, "left arm: WALL_PROJECTION"))
-    right_content = experiment_layer() + slit_layer()
-    lines.extend(wrap_group(right_content, 800, 190, right_scale, "right arm: EXPERIMENT plus SLITS"))
+    experiment_content = experiment_layer() + slit_layer()
+    lines.extend(wrap_group(experiment_content, 340, 190, experiment_scale, "incoming electron cloud plus EXPERIMENT and SLITS"))
+    lines.extend(wrap_group(wall_projection_layer(center_x=0.0), 1570, 100, projection_scale, "right side: WALL_PROJECTION"))
     lines.extend(['  </g>', '</svg>'])
     return "\n".join(lines)
 
